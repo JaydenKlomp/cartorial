@@ -1,0 +1,69 @@
+version: '3'
+
+services:
+  # PHP Service
+  fruitorialv2_app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: fruitorialv2
+    container_name: fruitorialv2_app
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+      - ./php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    extra_hosts:
+      - "fruitorialv2.test:93.89.0.4"
+    networks:
+      - fruit_network
+
+  # Nginx Service
+  fruitorialv2_webserver:
+    image: nginx:alpine
+    container_name: fruitorialv2
+    restart: unless-stopped
+    tty: true
+    # ports:
+    #   - "80:80"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d/:/etc/nginx/conf.d/
+      - ./nginx/logs/:/var/log
+    networks:
+      - my-proxy-net
+      - fruit_network
+
+  # MySQL Service
+  fruitorialv2_db:
+    image: mariadb:10.1.48
+    container_name: fruitorialv2_db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "9389:3306"
+    environment:
+      MYSQL_DATABASE: fruitorialv2
+      MYSQL_ROOT_PASSWORD: NGoF4nGjUnWcGQoMUavDCfkk7gWenE
+    volumes:
+      - fruitorialv2_dbdata:/var/lib/mysql
+    networks:
+      - fruit_network
+
+# Docker Networks
+networks:
+  my-proxy-net:
+    external:
+      name: "custom_network"
+  fruit_network:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      config:
+        - subnet: 93.89.0.0/24
+          gateway: 93.89.0.1
+
+# Volumes
+volumes:
+  fruitorialv2_dbdata:
+    driver: local
